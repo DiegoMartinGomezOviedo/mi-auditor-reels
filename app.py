@@ -15,7 +15,7 @@ with st.sidebar:
 # El "Cerebro": Definimos qué evaluar
 def analizar_video(video_file, key):
     genai.configure(api_key=key)
-    model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+    model = genai.GenerativeModel(model_name="gemini-1.5-flash-latest")
     
     # Subir el video a la nube de Google temporalmente
     with st.spinner("Subiendo y analizando video... (esto puede tardar un minuto)"):
