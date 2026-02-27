@@ -7,56 +7,52 @@ st.title("🎬 Reel Auditor Pro")
 
 with st.sidebar:
     api_key = st.text_input("Ingresa tu Gemini API Key:", type="password")
-    st.divider()
-    st.caption("Versión: Gemini 3 Flash Engine")
+    st.info("Tip: Si copiaste la clave de la foto, asegúrate de que no falte ningún caracter.")
 
 def analizar_video(video_path, key):
-    genai.configure(api_key=key)
+    # FORZAMOS LA VERSIÓN ESTABLE Y COMUNICACIÓN SIMPLE
+    genai.configure(api_key=key, transport='rest') 
     
-    # Intentamos con la versión más moderna (Gemini 3)
-    try:
-        model = genai.GenerativeModel('gemini-3-flash')
-    except:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    # Probamos con el nombre más compatible de todos
+    model = genai.GenerativeModel('gemini-1.5-flash')
 
-    with st.spinner("Procesando video con IA de última generación..."):
-        # Subir el archivo
-        video_file = genai.upload_file(path=video_path)
+    with st.spinner("Analizando video... Esto puede tardar 30-60 segundos."):
+        video_data = genai.upload_file(path=video_path)
         
-        # Esperar procesamiento
-        while video_file.state.name == "PROCESSING":
+        while video_data.state.name == "PROCESSING":
             time.sleep(2)
-            video_file = genai.get_file(video_file.name)
+            video_data = genai.get_file(video_data.name)
 
         prompt = """
-        Actúa como un estratega de contenido viral. Analiza este video y genera:
-        1. Una tabla comparativa con notas del 1 al 10 para: Estructura, Hook, CTA, Ritmo, Música, Mensaje y Subtítulos.
-        2. Un párrafo de 'Sugerencias Pro' para mejorar la retención y el impacto.
+        Actúa como un experto en marketing de contenidos. Analiza este video y devuelve:
+        1. Una tabla con calificaciones (1-10) para: Estructura, Hook, CTA, Ritmo, Música, Mensaje y Subtítulos.
+        2. Un párrafo con sugerencias clave para mejorar el rendimiento del reel.
         """
         
-        response = model.generate_content([video_file, prompt])
-        return response.text
+        # Usamos un bloque try por si el modelo falla, intentar el siguiente
+        try:
+            response = model.generate_content([video_data, prompt])
+            return response.text
+        except:
+            # Si falla el anterior, intentamos con la versión Pro (que también suele estar libre)
+            model_pro = genai.GenerativeModel('gemini-1.5-pro')
+            response = model_pro.generate_content([video_data, prompt])
+            return response.text
 
 archivo_video = st.file_uploader("Sube tu Reel", type=['mp4', 'mov'])
 
 if archivo_video:
     st.video(archivo_video)
-    
-    if st.button("🚀 Iniciar Auditoría"):
+    if st.button("🚀 Iniciar Evaluación"):
         if not api_key:
-            st.error("Falta la API Key en la barra lateral.")
+            st.error("Por favor, ingresa la API Key a la izquierda.")
         else:
             try:
-                # Guardado temporal
-                with open("temp_reel.mp4", "wb") as f:
+                with open("temp_video.mp4", "wb") as f:
                     f.write(archivo_video.getbuffer())
                 
-                resultado = analizar_video("temp_reel.mp4", api_key)
-                st.success("¡Auditoría terminada!")
+                resultado = analizar_video("temp_video.mp4", api_key)
+                st.success("¡Análisis Terminado!")
                 st.markdown(resultado)
             except Exception as e:
-                st.error(f"Error de conexión: {e}")
-                st.info("Asegúrate de que tu API Key sea válida para modelos Gemini 3.")
-
-if st.button("🔄 Limpiar y Nuevo Video"):
-    st.rerun()
+                st.error(f"Error: {e}")
